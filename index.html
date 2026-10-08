@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Compras">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#121214">
+<link id="touch-icon" rel="apple-touch-icon">
+<title>Lista de Compras</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--field:#f1f3f9;--primary:#0070f3;--primary-hover:#0051b3;--text:#1b1c22;--muted:#5d6070;--border:#d9dce6;--success:#0aa653;--danger:#d63a49;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121214;--card:#202024;--field:#121214;--text:#e1e1e6;--muted:#a8a8b3;--border:#323238;--success:#04d361;--danger:#f75a68}}
+:root[data-theme="dark"]{--bg:#121214;--card:#202024;--field:#121214;--text:#e1e1e6;--muted:#a8a8b3;--border:#323238;--success:#04d361;--danger:#f75a68}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+body{background:var(--bg);color:var(--text);padding:16px 16px 120px;min-height:100vh}
+.container{max-width:720px;margin:0 auto}
+header{margin:8px 0 22px;text-align:center}
+header h1{font-size:1.5rem;margin-bottom:4px}
+header p{color:var(--muted);font-size:.9rem}
+.card{background:var(--card);padding:14px;border-radius:10px;border:1px solid var(--border);margin-bottom:14px}
+input,select,button,textarea{background:var(--field);color:var(--text);border:1px solid var(--border);padding:12px;border-radius:8px;font-size:16px;outline:none;max-width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+textarea{width:100%;resize:vertical;margin-top:10px}
+button{cursor:pointer;transition:background .2s,border-color .2s}
+button:focus-visible,.check input:focus-visible~.mark{outline:2px solid var(--primary);outline-offset:2px}
+.btn-primary{background:var(--primary);color:#fff;font-weight:700;border:none}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-sm{padding:9px 13px;font-size:.9rem;background:var(--card)}
+.btn-sm:hover{border-color:var(--primary)}
+.btn-sm.danger{color:var(--danger)}
+.btn-sm.danger:hover{border-color:var(--danger)}
+.row{display:grid;grid-template-columns:2fr .8fr 1fr 1.2fr;gap:8px;margin-bottom:8px}
+.row>*{min-width:0}
+.sec-title{font-size:.9rem;color:var(--muted);margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:stretch;border:1px solid var(--border);border-radius:999px;background:var(--field);overflow:hidden}
+.chip button{border:none;background:transparent;border-radius:0;padding:8px 12px;font-size:.9rem}
+.chip .add:hover{color:var(--primary)}
+.chip .rm{color:var(--muted);padding:8px 10px;border-left:1px solid var(--border)}
+.chip .rm:hover{color:var(--danger)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;margin-bottom:12px}
+.group{display:flex;gap:8px;flex-wrap:wrap}
+.filter-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.item{background:var(--card);border:1px solid var(--border);padding:12px 14px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.item.done{opacity:.6}
+.item.done .name{text-decoration:line-through;color:var(--muted)}
+.item.editing{flex-direction:column;align-items:stretch;border-color:var(--primary)}
+.left{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+.check{position:relative;cursor:pointer;display:flex;padding:4px}
+.check input{position:absolute;opacity:0;width:0;height:0}
+.mark{height:26px;width:26px;background:var(--field);border:2px solid var(--border);border-radius:7px;position:relative}
+.check input:checked~.mark{background:var(--success);border-color:var(--success)}
+.mark:after{content:"";position:absolute;display:none;left:8px;top:3px;width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.check input:checked~.mark:after{display:block}
+.details{display:flex;flex-direction:column;gap:4px;min-width:0}
+.name{font-weight:500;word-break:break-word}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.badge{font-size:.75rem;padding:2px 8px;border-radius:4px;font-weight:700;background:var(--field);border:1px solid var(--border)}
+.badge.qty{color:#e08a2e;border-color:rgba(224,138,46,.45)}
+.badge.price{color:var(--success);border-color:rgba(10,166,83,.45)}
+.badge.cat{color:#10a8aa;border-color:rgba(16,168,170,.45)}
+.actions{display:flex;gap:2px}
+.icon-btn{background:transparent;border:none;color:var(--muted);padding:10px;font-size:1.1rem;border-radius:6px}
+.icon-btn:hover{color:var(--primary)}
+.icon-btn.del:hover{color:var(--danger)}
+.edit-actions{display:flex;gap:8px;justify-content:flex-end}
+.empty{text-align:center;padding:36px 16px;color:var(--muted);background:var(--card);border:1px dashed var(--border);border-radius:10px}
+.msg{font-size:.85rem;color:var(--muted);margin-top:10px;min-height:1.2em}
+footer{margin-top:10px;text-align:center;color:var(--muted);font-size:.78rem}
+.total-bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.total-bar .in{max-width:720px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.t-label{font-size:.8rem;color:var(--muted)}
+.t-val{font-size:1.45rem;font-weight:700}
+.t-side{text-align:right;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:2px}
+@media(max-width:520px){.row{grid-template-columns:1fr 1fr}.row>:first-child,.row>select{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>🛒 Lista de Compras</h1>
+<p>Cada item que você adiciona fica salvo, com o último preço, para reutilizar nas próximas compras.</p>
+</header>
+
+<div class="card">
+<form id="form" autocomplete="off">
+<div class="row">
+<input type="text" id="f-name" list="saved-names" placeholder="Item (ex: Leite)" required>
+<input type="text" id="f-qty" inputmode="decimal" placeholder="Qtd">
+<input type="text" id="f-price" inputmode="decimal" placeholder="Preço unit. R$">
+<select id="f-cat" aria-label="Categoria"></select>
+</div>
+<datalist id="saved-names"></datalist>
+<button type="submit" class="btn-primary" style="width:100%">+ Adicionar à lista</button>
+</form>
+</div>
+
+<div class="card">
+<div class="sec-title">Itens salvos (<span id="saved-count">0</span>). Toque para adicionar</div>
+<div class="chips" id="chips"></div>
+</div>
+
+<div class="toolbar">
+<div class="group" id="filters">
+<button class="btn-sm filter-btn active" data-filter="todos">Todos (<span id="c-todos">0</span>)</button>
+<button class="btn-sm filter-btn" data-filter="pendente">Pendentes (<span id="c-pend">0</span>)</button>
+<button class="btn-sm filter-btn" data-filter="comprado">Comprados (<span id="c-comp">0</span>)</button>
+</div>
+<div class="group">
+<button class="btn-sm" id="clear-done">Limpar comprados</button>
+<button class="btn-sm danger" id="reset">Redefinir tudo</button>
+</div>
+</div>
+
+<div class="list" id="items"></div>
+
+<div class="card">
+<div class="sec-title" style="margin-bottom:10px">Backup da lista e dos itens salvos</div>
+<div class="group">
+<button class="btn-sm" id="b-export">Exportar arquivo</button>
+<button class="btn-sm" id="b-copy">Copiar backup</button>
+<button class="btn-sm" id="b-file">Importar arquivo</button>
+<button class="btn-sm" id="b-paste">Importar colando</button>
+<input type="file" id="file-import" accept=".json,application/json,text/plain" hidden>
+</div>
+<div id="paste-box" hidden>
+<textarea id="b-text" rows="5" placeholder="Cole aqui o backup copiado"></textarea>
+<button class="btn-sm btn-primary" id="b-go" style="margin-top:8px">Importar este texto</button>
+</div>
+<p class="msg" id="b-msg" role="status"></p>
+</div>
+<footer>Os dados ficam salvos neste aparelho. Exporte um backup de vez em quando.</footer>
+</div>
+
+<div class="total-bar" role="status">
+<div class="in">
+<div><div class="t-label">Total da compra</div><div class="t-val" id="t-total">R$ 0,00</div></div>
+<div class="t-side"><span id="t-cart">No carrinho: R$ 0,00</span><span id="t-noprice"></span></div>
+</div>
+</div>
+
+<script>
+const KEY = 'lista_compras_v1';
+const CATS = ['Hortifruti','Padaria','Açougue','Laticínios','Mercearia','Bebidas','Limpeza','Higiene','Outros'];
+const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const catOpts = sel => CATS.map(c => `<option${c===sel?' selected':''}>${c}</option>`).join('');
+const uid = () => Date.now() + Math.floor(Math.random() * 1000);
+const norm = s => s.trim().toLowerCase();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+
+// Aceita "4,50", "4.50" e "1.234,56"
+function parseNum(v) {
+  if (typeof v === 'number') return isFinite(v) && v > 0 ? v : 0;
+  let s = String(v == null ? '' : v).replace(/[^\d.,]/g, '');
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return isFinite(n) && n > 0 ? n : 0;
+}
+const toQty = v => {
+  if (typeof v === 'number') return v > 0 ? v : 1;
+  const m = String(v == null ? '' : v).match(/[\d.,]+/);   // migra textos antigos como "2 un"
+  return (m && parseNum(m[0])) || 1;
+};
+const toInput = n => n > 0 ? String(n).replace('.', ',') : '';
+const catOk = c => CATS.includes(c) ? c : 'Outros';
+const cents = n => Math.round(n * 100) / 100;
+
+function cleanItem(i) {
+  return { id: Number(i.id) || uid(), name: String(i.name || '').trim(), qty: toQty(i.qty), price: parseNum(i.price), cat: catOk(i.cat), done: !!i.done };
+}
+function cleanSaved(s) {
+  return { name: String(s.name || '').trim(), cat: catOk(s.cat), qty: toQty(s.qty), price: parseNum(s.price) };
+}
+function cleanState(d) {
+  return {
+    items: d.items.map(cleanItem).filter(i => i.name),
+    saved: (Array.isArray(d.saved) ? d.saved : []).map(cleanSaved).filter(s => s.name)
+  };
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (s && Array.isArray(s.items)) return cleanState(s);
+  } catch (e) {}
+  return { items: [], saved: [] };
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { say('Não foi possível salvar neste navegador. Exporte um backup.'); }
+}
+function say(t) { $('b-msg').textContent = t; }
+
+let state = load();
+let filter = 'todos';
+let editingId = null;
+let dl = null;   // capability de download (pode não existir)
+try { if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { dl = d; }).catch(() => {}); } catch (e) {}
+
+$('f-cat').innerHTML = catOpts('Mercearia');
+
+function upsertSaved(name, cat, qty, price) {
+  const s = state.saved.find(x => norm(x.name) === norm(name));
+  if (s) { s.name = name; s.cat = cat; s.qty = qty || s.qty || 1; if (price > 0) s.price = price; }
+  else state.saved.push({ name, cat, qty: qty || 1, price: price || 0 });
+  state.saved.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+}
+function addItem(name, qty, price, cat) {
+  name = name.trim(); if (!name) return;
+  const ex = state.items.find(i => norm(i.name) === norm(name));
+  if (ex) { ex.done = false; if (qty) ex.qty = qty; if (price > 0) ex.price = price; cat = ex.cat; }
+  else state.items.unshift({ id: uid(), name, qty: qty || 1, price: price || 0, cat, done: false });
+  upsertSaved(name, cat, qty, price);
+  save(); render();
+}
+
+function render() {
+  const its = state.items;
+  $('c-todos').textContent = its.length;
+  $('c-pend').textContent = its.filter(i => !i.done).length;
+  $('c-comp').textContent = its.filter(i => i.done).length;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+
+  const total = cents(its.reduce((a, i) => a + i.price * i.qty, 0));
+  const cart = cents(its.filter(i => i.done).reduce((a, i) => a + i.price * i.qty, 0));
+  const noPrice = its.filter(i => !(i.price > 0)).length;
+  $('t-total').textContent = brl.format(total);
+  $('t-cart').textContent = 'No carrinho: ' + brl.format(cart);
+  $('t-noprice').textContent = noPrice ? `${noPrice} ${noPrice === 1 ? 'item sem preço' : 'itens sem preço'}` : '';
+
+  $('saved-names').innerHTML = state.saved.map(s => `<option value="${esc(s.name)}">`).join('');
+  const onList = new Set(its.map(i => norm(i.name)));
+  const avail = state.saved.filter(s => !onList.has(norm(s.name)));
+  $('saved-count').textContent = state.saved.length;
+  $('chips').innerHTML = avail.length
+    ? avail.map(s => `<span class="chip" data-name="${esc(s.name)}"><button class="add" data-act="chip-add" title="${s.price > 0 ? esc(brl.format(s.price)) : 'Sem preço salvo'}">${esc(s.name)}</button><button class="rm" data-act="chip-rm" aria-label="Remover dos salvos" title="Remover dos salvos">✕</button></span>`).join('')
+    : `<span class="sec-title" style="margin:0">${state.saved.length ? 'Todos os itens salvos já estão na lista.' : 'Os itens que você adicionar aparecem aqui.'}</span>`;
+
+  let shown = its;
+  if (filter === 'pendente') shown = its.filter(i => !i.done);
+  if (filter === 'comprado') shown = its.filter(i => i.done);
+  $('items').innerHTML = shown.length
+    ? shown.map(i => i.id === editingId ? editHTML(i) : itemHTML(i)).join('')
+    : `<div class="empty">${its.length ? 'Nenhum item neste filtro.' : 'Lista vazia. Adicione um item ou toque num item salvo.'}</div>`;
+  const ed = document.querySelector('.e-name'); if (ed) ed.focus();
+}
+
+function itemHTML(i) {
+  const q = String(i.qty).replace('.', ',');
+  const priceBadge = i.price > 0
+    ? `<span class="badge price">${brl.format(i.price)}${i.qty !== 1 ? ` × ${q} = ${brl.format(cents(i.price * i.qty))}` : ''}</span>`
+    : (i.qty !== 1 ? `<span class="badge qty">× ${q}</span>` : '');
+  return `<div class="item ${i.done?'done':''}" data-id="${i.id}">
+    <div class="left">
+      <label class="check"><input type="checkbox" data-act="toggle" ${i.done?'checked':''} aria-label="Marcar como comprado"><span class="mark"></span></label>
+      <div class="details">
+        <span class="name">${esc(i.name)}</span>
+        <div class="meta">${priceBadge}<span class="badge cat">${esc(i.cat)}</span></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" data-act="edit" aria-label="Editar" title="Editar">✏️</button>
+      <button class="icon-btn del" data-act="delete" aria-label="Excluir" title="Excluir">🗑️</button>
+    </div>
+  </div>`;
+}
+function editHTML(i) {
+  return `<div class="item editing" data-id="${i.id}">
+    <div class="row" style="margin-bottom:0">
+      <input class="e-name" type="text" value="${esc(i.name)}" placeholder="Item">
+      <input class="e-qty" type="text" inputmode="decimal" value="${esc(toInput(i.qty))}" placeholder="Qtd">
+      <input class="e-price" type="text" inputmode="decimal" value="${esc(toInput(i.price))}" placeholder="Preço unit. R$">
+      <select class="e-cat">${catOpts(i.cat)}</select>
+    </div>
+    <div class="edit-actions">
+      <button class="btn-sm" data-act="cancel">Cancelar</button>
+      <button class="btn-sm btn-primary" data-act="save">Salvar</button>
+    </div>
+  </div>`;
+}
+function saveEdit(el, id) {
+  const name = el.querySelector('.e-name').value.trim();
+  if (!name) { el.querySelector('.e-name').focus(); return; }
+  const it = state.items.find(x => x.id === id);
+  it.name = name; it.qty = parseNum(el.querySelector('.e-qty').value) || 1;
+  it.price = parseNum(el.querySelector('.e-price').value); it.cat = el.querySelector('.e-cat').value;
+  upsertSaved(name, it.cat, it.qty, it.price);
+  editingId = null; save(); render();
+}
+
+// Formulário
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  addItem($('f-name').value, parseNum($('f-qty').value), parseNum($('f-price').value), $('f-cat').value);
+  e.target.reset(); $('f-cat').value = 'Mercearia'; $('f-name').focus();
+});
+$('f-name').addEventListener('input', () => {
+  const s = state.saved.find(x => norm(x.name) === norm($('f-name').value));
+  if (s) { $('f-cat').value = s.cat; $('f-qty').value = s.qty !== 1 ? toInput(s.qty) : ''; $('f-price').value = toInput(s.price); }
+});
+
+// Itens salvos
+$('chips').addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'), chip = e.target.closest('.chip');
+  if (!btn || !chip) return;
+  const s = state.saved.find(x => x.name === chip.dataset.name);
+  if (!s) return;
+  if (btn.dataset.act === 'chip-add') addItem(s.name, s.qty, s.price, s.cat);
+  else { state.saved = state.saved.filter(x => x !== s); save(); render(); }
+});
+
+// Itens da lista
+const itemsEl = $('items');
+itemsEl.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'), el = e.target.closest('[data-id]');
+  if (!btn || !el || btn.dataset.act === 'toggle') return;
+  const id = Number(el.dataset.id), act = btn.dataset.act;
+  if (act === 'edit') { editingId = id; render(); }
+  else if (act === 'cancel') { editingId = null; render(); }
+  else if (act === 'save') saveEdit(el, id);
+  else if (act === 'delete') { state.items = state.items.filter(i => i.id !== id); save(); render(); }
+});
+itemsEl.addEventListener('change', e => {
+  if (e.target.dataset.act !== 'toggle') return;
+  const it = state.items.find(x => x.id === Number(e.target.closest('[data-id]').dataset.id));
+  it.done = e.target.checked; save(); render();
+});
+itemsEl.addEventListener('keydown', e => {
+  const el = e.target.closest('.editing'); if (!el) return;
+  if (e.key === 'Enter') { e.preventDefault(); saveEdit(el, Number(el.dataset.id)); }
+  if (e.key === 'Escape') { editingId = null; render(); }
+});
+
+$('filters').addEventListener('click', e => {
+  const b = e.target.closest('[data-filter]');
+  if (b) { filter = b.dataset.filter; render(); }
+});
+$('clear-done').addEventListener('click', () => {
+  if (!state.items.some(i => i.done)) return;
+  state.items = state.items.filter(i => !i.done); save(); render();
+});
+$('reset').addEventListener('click', () => {
+  if (!confirm('Apagar a lista E todos os itens salvos? Isso não pode ser desfeito. Exporte um backup antes, se precisar.')) return;
+  state = { items: [], saved: [] }; filter = 'todos'; editingId = null; save(); render(); say('');
+});
+
+// Backup: exportar
+function backupText() {
+  return JSON.stringify({ app: 'lista-de-compras', version: 2, exportedAt: new Date().toISOString(), items: state.items, saved: state.saved }, null, 2);
+}
+async function copyBackup(note) {
+  const text = backupText();
+  try { await navigator.clipboard.writeText(text); say(note || 'Backup copiado. Cole em Notas, e-mail ou mensagem para guardar.'); }
+  catch (e) {
+    $('paste-box').hidden = false; $('b-text').value = text; $('b-text').focus(); $('b-text').select();
+    say('Copie o texto selecionado abaixo e guarde onde quiser.');
+  }
+}
+$('b-copy').addEventListener('click', () => copyBackup());
+$('b-export').addEventListener('click', async () => {
+  if (!dl) { copyBackup('Download indisponível aqui. O backup foi copiado: cole em Notas ou e-mail para guardar.'); return; }
+  const day = new Date().toISOString().slice(0, 10);
+  try { await dl.save({ filename: `lista-de-compras-${day}.json`, data: backupText() }); say('Backup salvo.'); }
+  catch (err) {
+    if (err && err.code === 'declined') say('Exportação cancelada.');
+    else copyBackup('Não consegui gerar o arquivo. O backup foi copiado: cole em Notas ou e-mail para guardar.');
+  }
+});
+
+// Backup: importar
+function importText(text) {
+  try {
+    const d = JSON.parse(text);
+    if (!d || !Array.isArray(d.items)) throw new Error('formato');
+    if (!confirm('Importar este backup e substituir a lista e os itens salvos atuais?')) return;
+    state = cleanState(d); filter = 'todos'; editingId = null; save(); render();
+    say(`Backup importado: ${state.items.length} na lista e ${state.saved.length} itens salvos.`);
+    $('paste-box').hidden = true; $('b-text').value = '';
+  } catch (e) { say('Backup inválido. Use um texto ou arquivo exportado por esta página.'); }
+}
+$('b-file').addEventListener('click', () => $('file-import').click());
+$('file-import').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => importText(String(r.result));
+  r.readAsText(f); e.target.value = '';
+});
+$('b-paste').addEventListener('click', () => { $('paste-box').hidden = !$('paste-box').hidden; if (!$('paste-box').hidden) $('b-text').focus(); });
+$('b-go').addEventListener('click', () => importText($('b-text').value));
+
+// Ícone da tela de início (iOS usa PNG)
+try {
+  const c = document.createElement('canvas'); c.width = c.height = 180;
+  const x = c.getContext('2d');
+  x.fillStyle = '#0070f3'; x.fillRect(0, 0, 180, 180);
+  x.font = '100px serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText('🛒', 90, 98);
+  $('touch-icon').href = c.toDataURL('image/png');
+} catch (e) {}
+
+render();
+</script>
+</body>
+</html>
