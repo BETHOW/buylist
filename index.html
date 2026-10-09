@@ -70,6 +70,8 @@ button:focus-visible,.check input:focus-visible~.mark{outline:2px solid var(--pr
 .icon-btn.del:hover{color:var(--danger)}
 .edit-actions{display:flex;gap:8px;justify-content:flex-end}
 .empty{text-align:center;padding:36px 16px;color:var(--muted);background:var(--card);border:1px dashed var(--border);border-radius:10px}
+.sort{padding:9px 13px;font-size:.9rem;background:var(--card)}
+.sector{display:flex;justify-content:space-between;align-items:baseline;margin:10px 2px 0;font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .msg{font-size:.85rem;color:var(--muted);margin-top:10px;min-height:1.2em}
 footer{margin-top:10px;text-align:center;color:var(--muted);font-size:.78rem}
 .total-bar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--card);border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
@@ -90,12 +92,11 @@ footer{margin-top:10px;text-align:center;color:var(--muted);font-size:.78rem}
 <div class="card">
 <form id="form" autocomplete="off">
 <div class="row">
-<input type="text" id="f-name" list="saved-names" placeholder="Item (ex: Leite)" required>
+<input type="text" id="f-name" placeholder="Item (ex: Leite)" required>
 <input type="text" id="f-qty" inputmode="decimal" placeholder="Qtd">
 <input type="text" id="f-price" inputmode="decimal" placeholder="Preço unit. R$">
 <select id="f-cat" aria-label="Categoria"></select>
 </div>
-<datalist id="saved-names"></datalist>
 <button type="submit" class="btn-primary" style="width:100%">+ Adicionar à lista</button>
 </form>
 </div>
@@ -112,6 +113,7 @@ footer{margin-top:10px;text-align:center;color:var(--muted);font-size:.78rem}
 <button class="btn-sm filter-btn" data-filter="comprado">Comprados (<span id="c-comp">0</span>)</button>
 </div>
 <div class="group">
+<select id="sort" class="sort" aria-label="Ordenar lista"><option value="setor">Ordenar: por setor</option><option value="recente">Ordenar: mais recentes</option></select>
 <button class="btn-sm" id="clear-done">Limpar comprados</button>
 <button class="btn-sm danger" id="reset">Redefinir tudo</button>
 </div>
@@ -199,10 +201,18 @@ function say(t) { $('b-msg').textContent = t; }
 let state = load();
 let filter = 'todos';
 let editingId = null;
+let sortMode = 'setor';
+try { if (localStorage.getItem(KEY + '_sort') === 'recente') sortMode = 'recente'; } catch (e) {}
 let dl = null;   // capability de download (pode não existir)
 try { if (window.claude && window.claude.use) window.claude.use('downloads').then(d => { dl = d; }).catch(() => {}); } catch (e) {}
 
 $('f-cat').innerHTML = catOpts('Mercearia');
+$('sort').value = sortMode;
+$('sort').addEventListener('change', () => {
+  sortMode = $('sort').value;
+  try { localStorage.setItem(KEY + '_sort', sortMode); } catch (e) {}
+  render();
+});
 
 function upsertSaved(name, cat, qty, price) {
   const s = state.saved.find(x => norm(x.name) === norm(name));
@@ -233,7 +243,6 @@ function render() {
   $('t-cart').textContent = 'No carrinho: ' + brl.format(cart);
   $('t-noprice').textContent = noPrice ? `${noPrice} ${noPrice === 1 ? 'item sem preço' : 'itens sem preço'}` : '';
 
-  $('saved-names').innerHTML = state.saved.map(s => `<option value="${esc(s.name)}">`).join('');
   const onList = new Set(its.map(i => norm(i.name)));
   const avail = state.saved.filter(s => !onList.has(norm(s.name)));
   $('saved-count').textContent = state.saved.length;
@@ -244,9 +253,21 @@ function render() {
   let shown = its;
   if (filter === 'pendente') shown = its.filter(i => !i.done);
   if (filter === 'comprado') shown = its.filter(i => i.done);
-  $('items').innerHTML = shown.length
-    ? shown.map(i => i.id === editingId ? editHTML(i) : itemHTML(i)).join('')
-    : `<div class="empty">${its.length ? 'Nenhum item neste filtro.' : 'Lista vazia. Adicione um item ou toque num item salvo.'}</div>`;
+  const row = i => i.id === editingId ? editHTML(i) : itemHTML(i);
+  let html;
+  if (!shown.length) {
+    html = `<div class="empty">${its.length ? 'Nenhum item neste filtro.' : 'Lista vazia. Adicione um item ou toque num item salvo.'}</div>`;
+  } else if (sortMode === 'setor') {
+    html = CATS.map(c => {
+      const g = shown.filter(i => i.cat === c).sort((a, b) => a.done - b.done);   // pendentes antes dos comprados
+      if (!g.length) return '';
+      const sub = cents(g.reduce((a, i) => a + i.price * i.qty, 0));
+      return `<div class="sector"><span>${esc(c)} (${g.length})</span>${sub > 0 ? `<span>${brl.format(sub)}</span>` : ''}</div>` + g.map(row).join('');
+    }).join('');
+  } else {
+    html = shown.map(row).join('');
+  }
+  $('items').innerHTML = html;
   const ed = document.querySelector('.e-name'); if (ed) ed.focus();
 }
 
@@ -363,7 +384,17 @@ async function copyBackup(note) {
 }
 $('b-copy').addEventListener('click', () => copyBackup());
 $('b-export').addEventListener('click', async () => {
-  if (!dl) { copyBackup('Download indisponível aqui. O backup foi copiado: cole em Notas ou e-mail para guardar.'); return; }
+  if (!dl) {
+    try {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([backupText()], { type: 'application/json' }));
+      a.download = `lista-de-compras-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      say('Backup gerado. Se o arquivo não aparecer, use "Copiar backup".');
+    } catch (e) { copyBackup('Não consegui gerar o arquivo. O backup foi copiado: cole em Notas ou e-mail para guardar.'); }
+    return;
+  }
   const day = new Date().toISOString().slice(0, 10);
   try { await dl.save({ filename: `lista-de-compras-${day}.json`, data: backupText() }); say('Backup salvo.'); }
   catch (err) {
